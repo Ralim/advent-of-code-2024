@@ -5,7 +5,7 @@ fn main() {
     part_b();
 }
 
-fn part_a() {
+fn part_a() -> i64 {
     let mut input = shared::read_whitespace_separated_numbers("input.txt", 2).unwrap();
     assert_eq!(input[0].len(), input[1].len());
 
@@ -19,8 +19,9 @@ fn part_a() {
         distance_total += distance;
     }
     println!("PART A: Total distance: {}", distance_total);
+    distance_total
 }
-fn part_b() {
+fn part_b() -> i64 {
     let (slice_0, slice_1) = {
         let input = shared::read_whitespace_separated_numbers("input.txt", 2).unwrap();
         assert_eq!(input[0].len(), input[1].len());
@@ -47,4 +48,21 @@ fn part_b() {
         .map(|(a, b)| a * b)
         .sum::<i64>();
     println!("PART B: Total distance: {}", total);
+    total
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part_a() {
+        let results = part_a();
+        assert_eq!(results, 1579939);
+    }
+    #[test]
+    fn test_part_b() {
+        let results = part_b();
+        assert_eq!(results, 20351745);
+    }
 }
