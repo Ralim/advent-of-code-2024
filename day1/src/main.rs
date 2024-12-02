@@ -6,7 +6,7 @@ fn main() {
 }
 
 fn part_a() -> i64 {
-    let mut input = shared::read_whitespace_separated_numbers("input.txt", 2).unwrap();
+    let mut input = shared::read_whitespace_separated_numbers_by_column("input.txt", 2).unwrap();
     assert_eq!(input[0].len(), input[1].len());
 
     input[0].sort();
@@ -23,7 +23,7 @@ fn part_a() -> i64 {
 }
 fn part_b() -> i64 {
     let (slice_0, slice_1) = {
-        let input = shared::read_whitespace_separated_numbers("input.txt", 2).unwrap();
+        let input = shared::read_whitespace_separated_numbers_by_column("input.txt", 2).unwrap();
         assert_eq!(input[0].len(), input[1].len());
         let mut slice_0 = input[0].clone();
         let mut slice_1 = input[1].clone();
