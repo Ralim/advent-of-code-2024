@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use shared::read_whitespace_separated_numbers_by_row;
 
 fn main() {
@@ -56,12 +56,9 @@ fn test_row_with_removal(row: &[i64]) -> bool {
     if is_row_safe(row) {
         return true;
     }
-    for i in 0..row.len() {
-        if is_row_safe(&omit_one_entry(row, i)) {
-            return true;
-        }
-    }
-    false
+    (0..row.len())
+        .into_par_iter()
+        .any(|i| is_row_safe(&omit_one_entry(row, i)))
 }
 // Return a copy of the slice with the item at the index removed
 fn omit_one_entry(data: &[i64], index_removed: usize) -> Vec<i64> {
