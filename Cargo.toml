@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["day1", "day2", "day3", "shared"]
+members = ["day1", "day2", "day3", "day4", "shared"]
 
 [profile.release]
 debug = 1
