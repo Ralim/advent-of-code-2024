@@ -12,7 +12,7 @@ fn part_a(path: &str) -> i64 {
         let lines: Vec<&str> = file_contents.lines().collect();
         let filtered_file = file_contents.replace("\n", "").replace("\r", "");
 
-        Array2D::from_row_major(&filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
+        Array2D::from_row_major(filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
     };
     println!("Grid is {} by {}", grid.num_rows(), grid.num_columns());
 
@@ -51,7 +51,7 @@ fn part_b(path: &str) -> i64 {
         let lines: Vec<&str> = file_contents.lines().collect();
         let filtered_file = file_contents.replace("\n", "").replace("\r", "");
 
-        Array2D::from_row_major(&filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
+        Array2D::from_row_major(filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
     };
     println!("Grid is {} by {}", grid.num_rows(), grid.num_columns());
 
@@ -60,41 +60,41 @@ fn part_b(path: &str) -> i64 {
         // _A_
         // S_S
         [
-            (0, 0, 'M' as u8),
-            (0, 2, 'M' as u8), //
-            (1, 1, 'A' as u8), //
-            (2, 0, 'S' as u8),
-            (2, 2, 'S' as u8), //
+            (0, 0, b'M'),
+            (0, 2, b'M'), //
+            (1, 1, b'A'), //
+            (2, 0, b'S'),
+            (2, 2, b'S'), //
         ],
         // S_M
         // _A_
         // S_M
         [
-            (0, 0, 'S' as u8),
-            (0, 2, 'M' as u8), //
-            (1, 1, 'A' as u8), //
-            (2, 0, 'S' as u8),
-            (2, 2, 'M' as u8), //
+            (0, 0, b'S'),
+            (0, 2, b'M'), //
+            (1, 1, b'A'), //
+            (2, 0, b'S'),
+            (2, 2, b'M'), //
         ],
         // S_S
         // _A_
         // M_M
         [
-            (0, 0, 'S' as u8),
-            (0, 2, 'S' as u8), //
-            (1, 1, 'A' as u8), //
-            (2, 0, 'M' as u8),
-            (2, 2, 'M' as u8), //
+            (0, 0, b'S'),
+            (0, 2, b'S'), //
+            (1, 1, b'A'), //
+            (2, 0, b'M'),
+            (2, 2, b'M'), //
         ],
         // M_S
         // _A_
         // M_S
         [
-            (0, 0, 'M' as u8),
-            (0, 2, 'S' as u8), //
-            (1, 1, 'A' as u8), //
-            (2, 0, 'M' as u8),
-            (2, 2, 'S' as u8), //
+            (0, 0, b'M'),
+            (0, 2, b'S'), //
+            (1, 1, b'A'), //
+            (2, 0, b'M'),
+            (2, 2, b'S'), //
         ],
     ];
 

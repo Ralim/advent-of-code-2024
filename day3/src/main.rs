@@ -1,7 +1,6 @@
 use lazy_static::lazy_static;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use regex::Regex;
-use shared::read_whitespace_separated_numbers_by_row;
 
 fn main() {
     println!("PART A: {}", part_a("input.txt"));
