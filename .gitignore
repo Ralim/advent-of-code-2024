@@ -17,3 +17,5 @@ Cargo.lock
 # Profiling junk
 */perf*
 *.zst
+# Flame charts
+*.svg
