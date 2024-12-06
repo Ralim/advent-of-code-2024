@@ -105,10 +105,9 @@ impl Guard {
                 let encoded: u64 = (self.current_row as u64) << 16
                     | (self.current_col as u64) << 24
                     | self.current_direction.as_usize() as u64;
-                if position_back_buffer.contains(&encoded) {
+                if !position_back_buffer.insert(encoded) {
                     return true;
                 }
-                position_back_buffer.insert(encoded);
             }
         }
     }
