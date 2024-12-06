@@ -81,7 +81,8 @@ impl Guard {
     pub fn walk_matrix_does_loop(&mut self, mut grid: Array2D<u8>) -> bool {
         grid.set(self.current_row as usize, self.current_col as usize, b'x')
             .unwrap();
-        let mut position_back_buffer: HashSet<u64> = HashSet::new();
+        let mut position_back_buffer: HashSet<u64> =
+            HashSet::with_capacity(grid.column_len() * grid.row_len());
 
         loop {
             let (row, col) = self
