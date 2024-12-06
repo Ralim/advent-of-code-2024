@@ -1,6 +1,6 @@
 use array2d::Array2D;
+use hibitset::BitSet;
 use rayon::prelude::*;
-use std::collections::HashSet;
 
 fn main() {
     println!("PART A: {}", part_a("input.txt"));
@@ -78,11 +78,11 @@ impl Guard {
         }
         steps
     }
-    pub fn walk_matrix_does_loop(&mut self, mut grid: Array2D<u8>) -> bool {
-        grid.set(self.current_row as usize, self.current_col as usize, b'x')
-            .unwrap();
-        let mut position_back_buffer: HashSet<u64> =
-            HashSet::with_capacity(grid.column_len() * grid.row_len());
+    pub fn walk_matrix_does_loop(&mut self, grid: &Array2D<u8>) -> bool {
+        // Only goes up to like 130 rows, ln2(130) = 7,So allocate 8 bits for row, 8 bits for column, 2 bits for direction
+        //
+        let max_value = 1 << (8 + 8 + 2);
+        let mut position_back_buffer: BitSet = BitSet::with_capacity(max_value as u32);
 
         loop {
             let (row, col) = self
@@ -102,10 +102,10 @@ impl Guard {
                 self.current_row = row;
                 self.current_col = col;
                 //Encode current position
-                let encoded: u64 = (self.current_row as u64) << 16
-                    | (self.current_col as u64) << 24
-                    | self.current_direction.as_usize() as u64;
-                if !position_back_buffer.insert(encoded) {
+                let encoded: u32 = (self.current_row as u32) << 10
+                    | (self.current_col as u32) << 2
+                    | self.current_direction.as_usize() as u32;
+                if position_back_buffer.add(encoded) {
                     return true;
                 }
             }
@@ -183,7 +183,7 @@ fn part_b(path: &str) -> i64 {
             let mut new_grid = grid.clone();
             new_grid.set(*row, *col, b'#').unwrap();
             let mut new_guard = guard;
-            new_guard.walk_matrix_does_loop(new_grid)
+            new_guard.walk_matrix_does_loop(&new_grid)
         })
         .filter(|x| *x)
         .count() as i64 // Count how many are true
