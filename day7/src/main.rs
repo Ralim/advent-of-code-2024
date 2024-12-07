@@ -3,14 +3,18 @@ use rayon::prelude::*;
 use shared::create_all_possible_operations;
 
 fn main() {
-    println!("PART A: {}", part_a("input.txt"));
-    println!("PART B: {}", part_b("input.txt"));
+    let t_a = std::thread::spawn(|| {
+        println!("PART A: {}", part_a("input.txt"));
+    });
+    let t_b = std::thread::spawn(|| {
+        println!("PART B: {}", part_b("input.txt"));
+    });
+    t_a.join().unwrap();
+    t_b.join().unwrap();
 }
 fn test_equation_solve_by_operations(set: &[Operations], equation: &Equation) -> bool {
-    let all_operations = create_all_possible_operations(set, equation.inputs.len() - 1);
-    all_operations
-        .par_iter()
-        .any(|ops| equation.solve(ops) == equation.test_value)
+    let mut all_operations = create_all_possible_operations(set, equation.inputs.len() - 1);
+    all_operations.any(|ops| equation.solve_matches(&ops, equation.test_value))
 }
 fn part_a(path: &str) -> i64 {
     let equations = read_file_to_vec(path);
@@ -48,7 +52,7 @@ struct Equation {
     inputs: Vec<i64>,
 }
 impl Equation {
-    fn solve(&self, operations: &[Operations]) -> i64 {
+    fn solve_matches(&self, operations: &[&Operations], target: i64) -> bool {
         let mut total = self.inputs[0];
         for (i, op) in operations.iter().enumerate() {
             match op {
@@ -61,8 +65,11 @@ impl Equation {
                     total = (total * 10_i64.pow(shift as u32)) + next;
                 }
             }
+            if total > target {
+                return false;
+            }
         }
-        total
+        total == target
     }
 }
 impl From<&str> for Equation {

@@ -1,8 +1,14 @@
 use rayon::prelude::*;
 
 fn main() {
-    println!("PART A: {}", part_a("input.txt"));
-    println!("PART B: {}", part_b("input.txt"));
+    let t_a = std::thread::spawn(|| {
+        println!("PART A: {}", part_a("input.txt"));
+    });
+    let t_b = std::thread::spawn(|| {
+        println!("PART B: {}", part_b("input.txt"));
+    });
+    t_a.join().unwrap();
+    t_b.join().unwrap();
 }
 fn part_a(path: &str) -> i64 {
     0
