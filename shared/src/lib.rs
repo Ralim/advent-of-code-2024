@@ -1,5 +1,9 @@
 use std::fs::read_to_string;
 use std::io;
+mod matrix;
+pub use matrix::*;
+mod combos;
+pub use combos::*;
 
 pub fn read_whitespace_separated_numbers_by_column(
     file_path: &str,

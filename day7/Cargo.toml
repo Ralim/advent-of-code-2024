@@ -1,0 +1,11 @@
+[package]
+name = "day7"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+count-digits = "0.5.1"
+itertools = "0.13.0"
+rayon = "1.10.0"
+
+shared = { path = "../shared" }

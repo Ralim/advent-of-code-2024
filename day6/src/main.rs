@@ -1,6 +1,7 @@
 use array2d::Array2D;
 use hibitset::BitSet;
 use rayon::prelude::*;
+use shared::read_file_to_grid;
 
 fn main() {
     println!("PART A: {}", part_a("input.txt"));
@@ -113,13 +114,7 @@ impl Guard {
     }
 }
 fn part_a(path: &str) -> i64 {
-    let grid = {
-        let file_contents = std::fs::read_to_string(path).unwrap();
-        let lines: Vec<&str> = file_contents.lines().collect();
-        let filtered_file = file_contents.replace("\n", "").replace("\r", "");
-
-        Array2D::from_row_major(filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
-    };
+    let grid = read_file_to_grid(path);
     //Find guard init state
     // Walk grid to find the '^' character
     let (current_row, current_col) = grid
@@ -140,13 +135,7 @@ fn part_a(path: &str) -> i64 {
     guard.walk_matrix_count_steps(grid)
 }
 fn part_b(path: &str) -> i64 {
-    let grid = {
-        let file_contents = std::fs::read_to_string(path).unwrap();
-        let lines: Vec<&str> = file_contents.lines().collect();
-        let filtered_file = file_contents.replace("\n", "").replace("\r", "");
-
-        Array2D::from_row_major(filtered_file.as_bytes(), lines[0].len(), lines.len()).unwrap()
-    };
+    let grid = read_file_to_grid(path);
     //Find guard init state
     // Walk grid to find the '^' character
     let (current_row, current_col) = grid
