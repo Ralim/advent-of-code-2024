@@ -4,6 +4,8 @@ mod matrix;
 pub use matrix::*;
 mod combos;
 pub use combos::*;
+mod matrix_direction;
+pub use matrix_direction::*;
 
 pub fn read_whitespace_separated_numbers_by_column(
     file_path: &str,
