@@ -1,0 +1,11 @@
+[package]
+name = "day14"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bmp = "0.5.0"
+rayon = "1.10.0"
+regex = "1.11.1"
+
+shared = { path = "../shared" }
