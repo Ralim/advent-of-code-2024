@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rayon::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -12,8 +13,8 @@ enum Instruction {
     CDV = 7, // Div of C and 2^Combo Op
 }
 
-impl From<i64> for Instruction {
-    fn from(item: i64) -> Self {
+impl From<u64> for Instruction {
+    fn from(item: u64) -> Self {
         match item {
             0 => Instruction::ADV,
             1 => Instruction::BXL,
@@ -27,15 +28,16 @@ impl From<i64> for Instruction {
         }
     }
 }
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct RegisterFile {
-    registers: [i64; 3],
+    registers: [u64; 3],
 }
+#[derive(Clone)]
 struct MiniPC {
     register_file: RegisterFile,
     instruction_pointer: usize,
-    instructions: Vec<i64>,
-    output: String,
+    instructions: Vec<u64>,
+    output: Vec<u64>,
 }
 impl MiniPC {
     pub fn from_file(path: &str) -> Self {
@@ -48,7 +50,6 @@ impl MiniPC {
             }
             //SPlit by colon to get name / value
             let parts = line.split(":").collect::<Vec<_>>();
-            println!("Parse > `{}` -> `{}`", parts[0], parts[1]);
             match parts[0] {
                 "Register A" => register_file.registers[0] = parts[1].trim().parse().unwrap(),
                 "Register B" => register_file.registers[1] = parts[1].trim().parse().unwrap(),
@@ -62,21 +63,21 @@ impl MiniPC {
                 _ => panic!("Unknown line {}", parts[0]),
             }
         }
-
+        let instructions_len = instructions.len();
         Self {
             register_file,
             instruction_pointer: 0,
             instructions,
-            output: "".to_owned(),
+            output: Vec::with_capacity(instructions_len),
         }
     }
     pub fn run_next_instruction(&mut self) {
         let instruction = Instruction::from(self.instructions[self.instruction_pointer]);
         let operand = self.instructions[self.instruction_pointer + 1];
-        println!(
-            "Running instruction {}:{:?}, op {}",
-            self.instruction_pointer, instruction, operand
-        );
+        // println!(
+        //     "Running instruction {}:{:?}, op {}",
+        //     self.instruction_pointer, instruction, operand
+        // );
         match instruction {
             Instruction::BXL => {
                 // BXL: XOR of B and literal
@@ -100,29 +101,28 @@ impl MiniPC {
             Instruction::OUT => {
                 // OUT: calculates the value of its combo operand % 8 and outputs it
                 let combo_op = self.get_combo_op(operand);
-
-                self.output += &format!("{},", combo_op % 8);
+                self.output.push(combo_op % 8);
             }
             Instruction::ADV => {
                 // ADV: Div of A and 2^Combo Op
                 self.register_file.registers[0] =
-                    self.register_file.registers[0] / 2_i64.pow(self.get_combo_op(operand) as u32);
+                    self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
             }
             Instruction::BDV => {
                 // BDV: Div of B and 2^Combo Op
                 self.register_file.registers[1] =
-                    self.register_file.registers[0] / 2_i64.pow(self.get_combo_op(operand) as u32);
+                    self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
             }
             Instruction::CDV => {
                 // CDV: Div of C and 2^Combo Op
                 self.register_file.registers[2] =
-                    self.register_file.registers[0] / 2_i64.pow(self.get_combo_op(operand) as u32);
+                    self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
             }
         }
         self.instruction_pointer += 2; // Next step
     }
 
-    fn get_combo_op(&self, op: i64) -> i64 {
+    fn get_combo_op(&self, op: u64) -> u64 {
         match op {
             0 => 0,                               // Literally 0
             1 => 1,                               // Literally 1
@@ -153,10 +153,80 @@ fn part_a(path: &str) -> String {
     while !machine.is_halted() {
         machine.run_next_instruction();
     }
-    machine.output[0..(machine.output.len() - 1)].to_owned()
+    format!("{}", machine.output.iter().format(","))
 }
-fn part_b(path: &str) -> i64 {
-    0
+fn part_b(path: &str) -> u64 {
+    // Hand rolling the hashing unwrap
+    // Feels a lot like we are reverseing a hash to find the correlation from the input (A reg) to output
+    /*
+    // 1: 2,4
+    // 2: 1,5
+    // 3: 7,5
+    // 4: 1,6
+    // 5: 4,2
+    // 6: 5,5
+    // 7: 0,3
+    // 8: 3,0
+       1: B = A%8
+       2: B = B^5
+       3: C = A/2^B
+       4: B = 6^B
+       5: B = B^C
+       6: OUT B%8
+       7: A = A/2^3
+       8: Jump to start if A!=0
+
+       // First notes, fairly linear; length is going to scale by A/2^3 seach step
+       // Therefore, A = 2^3^8 in size, so approx 2^24
+       // A has to be between 1<<(3*8) and 111<<(8*8)
+
+       // Simplied expression
+       B = (A%8)^5
+       C = A>>B
+       B = (B^6)^C
+       OUT B%8
+       A >>= 3
+
+       // We Loop over A, and we effectively process 3 bits at a time
+
+       B = ((A%8)^5)
+       OUT = ((6^B)^(A>>B))%8
+       OUT = ((6^((A%8)^5))^(A>>((A%8)^5)))%8
+
+    */
+    let machine = MiniPC::from_file(path);
+
+    fn find_matching_bits_recursively(
+        instructions: &[u64],
+        postion: usize,
+        accumulator: u64,
+    ) -> u64 {
+        // After looking at the code above, we process the accumulator in 3 bit chunks
+        for possible_input in 0..=0b111u64 {
+            let temporary_accumulator = accumulator << 3 | possible_input;
+
+            //A and B are seeded on each run, so no state is carried over
+            let mut B = (temporary_accumulator % 8) ^ 5;
+            let C = temporary_accumulator.wrapping_shr(B as u32);
+            B = (B ^ 6) ^ C;
+            let output = B % 8;
+
+            if output == instructions[postion] {
+                let out = if postion == 0 {
+                    // Have solved last bit slice
+                    temporary_accumulator
+                } else {
+                    find_matching_bits_recursively(instructions, postion - 1, temporary_accumulator)
+                };
+                if out != 0 {
+                    return out;
+                }
+            }
+        }
+        //We have failed to match the pattern??
+        unreachable!();
+    }
+    find_matching_bits_recursively(&machine.instructions, machine.instructions.len() - 1, 0)
 }
 
 #[cfg(test)]
@@ -175,8 +245,8 @@ mod tests {
     }
     #[test]
     fn test_part_b_demo() {
-        let results = part_b("test.txt");
-        assert_eq!(results, 0);
+        let results = part_b("test2.txt");
+        assert_eq!(results, 117440);
     }
     #[test]
     fn test_part_b_real() {
