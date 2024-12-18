@@ -91,9 +91,9 @@ fn part_a(path: &str, grid_size: usize, steps: usize) -> i64 {
     memory.find_steps_to_exit().unwrap()
 }
 fn part_b(path: &str, grid_size: usize) -> String {
-    //TODO, could binary search this
+    //TODO, could binary search this, but it takes sub 1 second so who cares
     let mut memory = MemorySpace::new(grid_size, grid_size, path);
-    while !memory.find_steps_to_exit().is_none() {
+    while memory.find_steps_to_exit().is_some() {
         memory.next_step();
     }
     let last_pair = memory.get_last_instruction();

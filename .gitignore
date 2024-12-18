@@ -19,3 +19,6 @@ Cargo.lock
 *.zst
 # Flame charts
 *.svg
+
+# Ignore the input files
+/*/input.txt

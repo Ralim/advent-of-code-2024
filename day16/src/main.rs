@@ -1,6 +1,7 @@
 use array2d::Array2D;
 use shared::read_file_to_grid;
 use std::{
+    cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
     fmt::Display,
 };
@@ -44,9 +45,9 @@ impl From<u8> for Direction {
         }
     }
 }
-impl Into<u8> for Direction {
-    fn into(self) -> u8 {
-        match self {
+impl From<Direction> for u8 {
+    fn from(val: Direction) -> Self {
+        match val {
             Direction::Up => b'^',
             Direction::Down => b'v',
             Direction::Left => b'<',
@@ -209,7 +210,7 @@ impl Map {
     pub fn find_all_paths_to_exit(&self) -> Vec<(i64, HashSet<(usize, usize)>)> {
         //Use binary heap to create a depth-first search across the map
         let mut paths = Vec::new();
-        let mut best_final_path_cost = std::i64::MAX;
+        let mut best_final_path_cost = i64::MAX;
         let mut queue = BinaryHeap::new();
         let mut seen = HashMap::new(); // Record each place we have been, and the best seen cost
 
@@ -232,7 +233,8 @@ impl Map {
             if let Some(&prev) = seen.get(&(pos, direction)) {
                 if cost > prev {
                     continue; // Skip this one as its worse than the last time we were here
-                } else if cost < prev {
+                }
+                if cost < prev {
                     seen.insert((pos, direction), cost); // Record new value
                 }
             } else {
@@ -241,14 +243,15 @@ impl Map {
 
             if pos == self.end {
                 //At end marker
-                if cost < best_final_path_cost {
-                    best_final_path_cost = cost;
-                    paths.clear(); // New score, so clear older worse ones
-                    paths.push((cost, path_history.iter().copied().collect()));
-                } else if cost == best_final_path_cost {
-                    paths.push((cost, path_history.iter().copied().collect()));
+                match cost.cmp(&best_final_path_cost) {
+                    Ordering::Greater => {} //its larger than best case so far, yeet it into the distance and keep driving
+                    Ordering::Less => {
+                        best_final_path_cost = cost;
+                        paths.clear(); // New score, so clear older worse ones
+                        paths.push((cost, path_history.iter().copied().collect()));
+                    }
+                    Ordering::Equal => paths.push((cost, path_history.iter().copied().collect())),
                 }
-                //Else its larger than best case so far, yeet it into the distance and keep driving
             }
             // Not at the end yet, so find all possible next moves and push them to the queue
             for (new_r, new_c, new_dir, new_cost) in

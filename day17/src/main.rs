@@ -1,29 +1,28 @@
 use itertools::Itertools;
-use rayon::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 enum Instruction {
-    ADV = 0, // Div of A and 2^Combo Op
-    BXL = 1, //XOR of B and literal
-    BST = 2, // Combo Op %8 and store to B
-    JNZ = 3, // If A!=0, jump to literal operand
-    BXC = 4, // Bitwise XOR of B and C, stores into B, ignores operand
-    OUT = 5, // calculates the value of its combo operand % 8 and outputs it
-    BDV = 6, // Div of B and 2^Combo Op
-    CDV = 7, // Div of C and 2^Combo Op
+    AShift = 0,      // Div of A and 2^Combo Op
+    BxorLit = 1,     //XOR of B and literal
+    BStore = 2,      // Combo Op %8 and store to B
+    JumpNonZero = 3, // If A!=0, jump to literal operand
+    BxorC = 4,       // Bitwise XOR of B and C, stores into B, ignores operand
+    Output = 5,      // calculates the value of its combo operand % 8 and outputs it
+    BShift = 6,      // Div of B and 2^Combo Op
+    CShift = 7,      // Div of C and 2^Combo Op
 }
 
 impl From<u64> for Instruction {
     fn from(item: u64) -> Self {
         match item {
-            0 => Instruction::ADV,
-            1 => Instruction::BXL,
-            2 => Instruction::BST,
-            3 => Instruction::JNZ,
-            4 => Instruction::BXC,
-            5 => Instruction::OUT,
-            6 => Instruction::BDV,
-            7 => Instruction::CDV,
+            0 => Instruction::AShift,
+            1 => Instruction::BxorLit,
+            2 => Instruction::BStore,
+            3 => Instruction::JumpNonZero,
+            4 => Instruction::BxorC,
+            5 => Instruction::Output,
+            6 => Instruction::BShift,
+            7 => Instruction::CShift,
             _ => panic!("Invalid instruction `{}`", item),
         }
     }
@@ -79,41 +78,40 @@ impl MiniPC {
         //     self.instruction_pointer, instruction, operand
         // );
         match instruction {
-            Instruction::BXL => {
+            Instruction::BxorLit => {
                 // BXL: XOR of B and literal
                 self.register_file.registers[1] ^= operand;
             }
-            Instruction::BST => {
+            Instruction::BStore => {
                 // BST: Combo Op %8 and store to B
                 self.register_file.registers[1] = self.get_combo_op(operand) % 8;
             }
-            Instruction::JNZ => {
+            Instruction::JumpNonZero => {
                 // JNZ: If A!=0, jump to literal operand
                 if self.register_file.registers[0] != 0 {
                     self.instruction_pointer = operand as usize;
                     return; // Do not increment program counter
                 }
             }
-            Instruction::BXC => {
+            Instruction::BxorC => {
                 // BXC: Bitwise XOR of B and C, stores into B, ignores operand
                 self.register_file.registers[1] ^= self.register_file.registers[2];
             }
-            Instruction::OUT => {
+            Instruction::Output => {
                 // OUT: calculates the value of its combo operand % 8 and outputs it
                 let combo_op = self.get_combo_op(operand);
                 self.output.push(combo_op % 8);
             }
-            Instruction::ADV => {
+            Instruction::AShift => {
                 // ADV: Div of A and 2^Combo Op
-                self.register_file.registers[0] =
-                    self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
+                self.register_file.registers[0] /= 2_u64.pow(self.get_combo_op(operand) as u32);
             }
-            Instruction::BDV => {
+            Instruction::BShift => {
                 // BDV: Div of B and 2^Combo Op
                 self.register_file.registers[1] =
                     self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
             }
-            Instruction::CDV => {
+            Instruction::CShift => {
                 // CDV: Div of C and 2^Combo Op
                 self.register_file.registers[2] =
                     self.register_file.registers[0] / 2_u64.pow(self.get_combo_op(operand) as u32);
@@ -185,49 +183,56 @@ fn part_b(path: &str) -> u64 {
        C = A>>B
        B = (B^6)^C
        OUT B%8
-       A >>= 3
+       A >> = 3
 
        // We Loop over A, and we effectively process 3 bits at a time
+       B <- A mod 8
+       B <- B xor 5
+       C <- A >> B
+       B <- B xor 6
+       B <- B xor C
+       OUT <- B mod 8
+       ----
+       A <- A >> 3
+       IF A != 0 THEN JMP 0
 
-       B = ((A%8)^5)
-       OUT = ((6^B)^(A>>B))%8
-       OUT = ((6^((A%8)^5))^(A>>((A%8)^5)))%8
 
     */
     let machine = MiniPC::from_file(path);
 
     fn find_matching_bits_recursively(
         instructions: &[u64],
-        postion: usize,
+        position: usize,
         accumulator: u64,
     ) -> u64 {
         // After looking at the code above, we process the accumulator in 3 bit chunks
-        for possible_input in 0..=0b111u64 {
-            let temporary_accumulator = accumulator << 3 | possible_input;
-
-            //A and B are seeded on each run, so no state is carried over
-            let mut B = (temporary_accumulator % 8) ^ 5;
-            let C = temporary_accumulator.wrapping_shr(B as u32);
-            B = (B ^ 6) ^ C;
-            let output = B % 8;
-            println!("Step {postion}, A B C {temporary_accumulator} {B} {C} -> {output}");
-            if output == instructions[postion] {
-                let out = if postion == 0 {
+        for possible_input in 0..(1 << 3) {
+            let temp_register_a = accumulator << 3 | possible_input;
+            //B and C are seeded on each run, so no state is carried over
+            let mut reg_b = temp_register_a % 8;
+            reg_b ^= 5;
+            let reg_c = temp_register_a.wrapping_shr(reg_b as u32);
+            reg_b ^= 6;
+            reg_b ^= reg_c;
+            let output = reg_b % 8;
+            println!("Step {position}|{possible_input}, A B C {temp_register_a} {reg_b} {reg_c} -> {output}");
+            if output == instructions[position] {
+                let out = if position == 0 {
                     // Have solved last bit slice
-                    temporary_accumulator
+                    temp_register_a
                 } else {
-                    find_matching_bits_recursively(instructions, postion - 1, temporary_accumulator)
+                    println!(
+                        "Matched {} for {} at position {}",
+                        output, instructions[position], position
+                    );
+                    find_matching_bits_recursively(instructions, position - 1, temp_register_a)
                 };
                 if out != 0 {
                     return out;
                 }
             }
         }
-        //We have failed to match the pattern??
-        unreachable!(
-            "Could not match {} at step {postion}",
-            instructions[postion]
-        );
+        0 // Fall back, this is because you can get more than one match, and so we have failed at the next step
     }
     find_matching_bits_recursively(&machine.instructions, machine.instructions.len() - 1, 0)
 }
@@ -254,6 +259,6 @@ mod tests {
     #[test]
     fn test_part_b_real() {
         let results = part_b("input.txt");
-        assert_eq!(results, 0);
+        assert_eq!(results, 107416870455451);
     }
 }
